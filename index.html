@@ -1,0 +1,547 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <meta
+    name="description"
+    content="Western Province illegal dumping public reporting and decision-support web map."
+  >
+
+  <title>Western Province | Waste Watch</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  >
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <header class="topbar">
+    <a class="brand" href="#">
+      <span class="brand-mark">♻</span>
+      <span>
+        <strong>WasteWatch</strong>
+        <small>Western Province, Sri Lanka</small>
+      </span>
+    </a>
+
+    <div class="top-actions">
+      <span class="live-dot"></span>
+      <span class="top-label">Public reporting &amp; decision support</span>
+      <button id="reportOpenTop" class="btn btn-primary">
+        ＋ Report illegal dumping
+      </button>
+    </div>
+  </header>
+
+  <main class="layout">
+
+    <aside class="sidebar">
+
+      <div class="intro">
+        <span class="eyebrow">COMMUNITY MAPPING</span>
+        <h1>Cleaner places<br><em>start with us.</em></h1>
+        <p>
+          Explore recorded dumping locations and waste facilities,
+          submit a new site for review, and track a complaint using
+          its reference number.
+        </p>
+      </div>
+
+      <section class="stats" aria-label="Map and complaint dashboard">
+
+        <div class="stat">
+          <span class="stat-icon red">●</span>
+          <div>
+            <strong id="illegalCount">—</strong>
+            <small>Existing dumping points</small>
+          </div>
+        </div>
+
+        <div class="stat">
+          <span class="stat-icon green">♻</span>
+          <div>
+            <strong id="legalCount">—</strong>
+            <small>Waste facilities</small>
+          </div>
+        </div>
+
+        <div class="stat">
+          <span class="stat-icon green">▣</span>
+          <div>
+            <strong id="reportTotal">—</strong>
+            <small>Public reports</small>
+          </div>
+        </div>
+
+        <div class="stat">
+          <span class="stat-icon amber">◷</span>
+          <div>
+            <strong id="reportPending">—</strong>
+            <small>Pending review</small>
+          </div>
+        </div>
+
+        <div class="stat">
+          <span class="stat-icon blue">✓</span>
+          <div>
+            <strong id="reportVerified">—</strong>
+            <small>Verified</small>
+          </div>
+        </div>
+
+        <div class="stat">
+          <span class="stat-icon purple">●</span>
+          <div>
+            <strong id="reportRegistered">—</strong>
+            <small>Registered</small>
+          </div>
+        </div>
+
+      </section>
+
+      <section class="panel-section">
+        <h2>Find a place</h2>
+
+        <form id="searchForm" class="search-row">
+          <input
+            id="searchInput"
+            type="search"
+            placeholder="Search town or address…"
+            aria-label="Search town or address"
+          >
+          <button class="btn btn-dark" type="submit">Search</button>
+        </form>
+
+        <p id="searchMessage" class="helper" aria-live="polite">
+          Search for a place or select a feature on the map.
+        </p>
+      </section>
+
+      <section class="panel-section">
+
+        <div class="section-heading">
+          <h2>Map layers</h2>
+          <button id="zoomAll" class="text-button" type="button">
+            Zoom to area
+          </button>
+        </div>
+
+        <label class="layer-toggle">
+          <input id="toggleBoundary" type="checkbox" checked>
+          <span class="swatch boundary-swatch"></span>
+          <span>
+            <b>Western Province boundary</b>
+            <small>Study area outline</small>
+          </span>
+        </label>
+
+        <label class="layer-toggle">
+          <input id="toggleIllegal" type="checkbox" checked>
+          <span class="swatch illegal-swatch"></span>
+          <span>
+            <b>Illegal dumping locations</b>
+            <small>Existing recorded points</small>
+          </span>
+          <span class="layer-count" id="illegalLayerCount">—</span>
+        </label>
+
+        <label class="layer-toggle">
+          <input id="toggleLegal" type="checkbox" checked>
+          <span class="swatch legal-swatch"></span>
+          <span>
+            <b>Waste facilities</b>
+            <small>Disposal, recovery &amp; recycling</small>
+          </span>
+          <span class="layer-count" id="legalLayerCount">—</span>
+        </label>
+
+        <label class="layer-toggle">
+          <input id="toggleReports" type="checkbox" checked>
+          <span class="swatch report-swatch"></span>
+          <span>
+            <b>Community reports</b>
+            <small>Reports submitted through this map</small>
+          </span>
+          <span class="layer-count" id="reportsLayerCount">—</span>
+        </label>
+
+      </section>
+
+      <section class="panel-section tracking-section">
+        <h2>Track your report</h2>
+
+        <p class="helper tracking-helper">
+          Enter the reference number shown after submission to
+          check the latest status.
+        </p>
+
+        <form id="trackForm" class="tracking-form">
+          <input
+            id="trackCode"
+            type="text"
+            maxlength="40"
+            placeholder="e.g. WW-ABC123"
+            aria-label="Report reference number"
+            required
+          >
+          <button class="btn btn-dark" type="submit">
+            Check status
+          </button>
+        </form>
+
+        <div id="trackMessage" class="tracking-result" aria-live="polite"></div>
+      </section>
+
+      <section class="note-card">
+        <span class="note-icon">ⓘ</span>
+        <div>
+          <b>About this map</b>
+          <p>
+            Facility coordinates are provisional where noted.
+            Existing dumping points are recorded locations, not a
+            live or complete inventory.
+          </p>
+        </div>
+      </section>
+
+      <button id="reportOpenSide" class="btn btn-primary btn-wide">
+        ＋ Submit a public report
+      </button>
+
+      <footer>
+        Western Province • Sri Lanka<br>
+        <span>Community reports require review before action.</span>
+      </footer>
+
+    </aside>
+
+    <section class="map-area">
+
+      <div id="map" aria-label="Interactive map of Western Province"></div>
+
+      <div id="mapHint" class="map-hint hidden">
+        <span class="pulse"></span>
+
+        <span>
+          <b>Choose dumping location</b>
+          <small>Click the map to place the report marker.</small>
+        </span>
+
+        <button id="cancelPick" type="button" aria-label="Cancel location selection">
+          Cancel
+        </button>
+      </div>
+
+      <div class="map-attribution-note">
+        Base map © OpenStreetMap contributors
+      </div>
+
+    </section>
+
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- Report form modal -->
+  <div
+    id="reportModal"
+    class="modal hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="reportTitle"
+  >
+
+    <div class="modal-card">
+
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">COMMUNITY REPORT</span>
+          <h2 id="reportTitle">Report illegal dumping</h2>
+        </div>
+
+        <button
+          id="closeReport"
+          class="icon-button"
+          type="button"
+          aria-label="Close form"
+        >×</button>
+      </div>
+
+      <p class="modal-intro">
+        Choose the location on the map first, then describe the dumping
+        site. Your report will be sent to the connected Google Sheet
+        for review.
+      </p>
+
+      <form id="reportForm">
+
+        <!-- Location -->
+        <div class="field">
+
+          <label>Selected coordinates <span>*</span></label>
+
+          <div class="coordinate-box">
+            <span id="coordinateText">No location selected yet</span>
+
+            <button
+              type="button"
+              id="chooseLocation"
+              class="btn btn-outline"
+            >Choose on map</button>
+          </div>
+
+          <input type="hidden" id="latitude" name="latitude">
+          <input type="hidden" id="longitude" name="longitude">
+
+          <small>
+            Click “Choose on map”, then click the exact location.
+            A marker will appear.
+          </small>
+
+        </div>
+
+        <!-- District and waste information -->
+        <div class="form-grid">
+
+          <div class="field">
+            <label for="district">District <span>*</span></label>
+
+            <select id="district" name="district" required>
+              <option value="">Select district</option>
+              <option>Colombo</option>
+              <option>Gampaha</option>
+              <option>Kalutara</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="wasteType">Waste type <span>*</span></label>
+
+            <select id="wasteType" name="wasteType" required>
+              <option value="">Select waste type</option>
+              <option>Plastic / polythene</option>
+              <option>Household waste</option>
+              <option>Construction waste</option>
+              <option>Organic / food waste</option>
+              <option>E-waste</option>
+              <option>Medical / hazardous waste</option>
+              <option>Mixed waste</option>
+              <option>Other</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="severity">Amount / severity <span>*</span></label>
+
+            <select id="severity" name="severity" required>
+              <option value="">Select severity</option>
+              <option>Low - small amount</option>
+              <option>Medium - moderate amount</option>
+              <option>High - large dumping area</option>
+              <option>Critical - hazardous / near water</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="nearWater">Near a water body?</label>
+
+            <select id="nearWater" name="nearWater">
+              <option>No</option>
+              <option>Yes</option>
+              <option>Not sure</option>
+            </select>
+          </div>
+
+        </div>
+
+        <!-- Description -->
+        <div class="field">
+          <label for="description">Description <span>*</span></label>
+
+          <textarea
+            id="description"
+            name="description"
+            rows="3"
+            maxlength="2000"
+            placeholder="Describe the location and waste observed. Do not include personal details."
+            required
+          ></textarea>
+        </div>
+
+        <!-- NEW: Direct image upload -->
+        <div class="field">
+
+          <label for="reportPhoto">
+            Upload evidence photo (optional)
+          </label>
+
+          <input
+            id="reportPhoto"
+            name="reportPhoto"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            aria-describedby="photoHelp photoPreviewMessage"
+          >
+
+          <small id="photoHelp">
+            Select a photo from your phone, gallery or computer.
+            JPG, PNG and WebP images are supported. Maximum original
+            file size: 5 MB.
+          </small>
+
+          <div
+            id="photoPreviewContainer"
+            style="display:none; margin-top:12px;"
+          >
+
+            <img
+              id="photoPreview"
+              alt="Preview of the selected dumping evidence photo"
+              style="
+                display:block;
+                width:100%;
+                max-height:260px;
+                object-fit:contain;
+                border-radius:8px;
+                border:1px solid #ddd;
+              "
+            >
+
+            <div
+              style="
+                display:flex;
+                align-items:center;
+                justify-content:space-between;
+                gap:10px;
+                margin-top:8px;
+              "
+            >
+              <small id="photoPreviewMessage" aria-live="polite"></small>
+
+              <button
+                id="removePhoto"
+                type="button"
+                class="btn btn-outline"
+              >Remove photo</button>
+            </div>
+
+          </div>
+
+        </div>
+
+        <div class="privacy-note">
+          No name, phone number or national identity number is requested.
+          Please do not include personal information about other people.
+          Submitted photos may be publicly accessible.
+        </div>
+
+        <div id="formMessage" class="form-message" aria-live="polite"></div>
+
+        <div class="form-actions">
+
+          <button id="cancelForm" type="button" class="btn btn-outline">
+            Cancel
+          </button>
+
+          <button id="submitReport" type="submit" class="btn btn-primary">
+            Submit report
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <script src="script.js"></script>
+
+  <!-- NEW: Image selection preview and removal -->
+  <script>
+    (function () {
+      const input = document.getElementById("reportPhoto");
+      const container = document.getElementById("photoPreviewContainer");
+      const preview = document.getElementById("photoPreview");
+      const message = document.getElementById("photoPreviewMessage");
+      const removeButton = document.getElementById("removePhoto");
+
+      if (!input || !container || !preview || !removeButton) return;
+
+      let currentObjectUrl = null;
+
+      function clearPreview() {
+        if (currentObjectUrl) {
+          URL.revokeObjectURL(currentObjectUrl);
+          currentObjectUrl = null;
+        }
+
+        preview.removeAttribute("src");
+        container.style.display = "none";
+        message.textContent = "";
+      }
+
+      input.addEventListener("change", function () {
+        clearPreview();
+
+        const file = input.files && input.files[0];
+
+        if (!file) return;
+
+        const allowedTypes = [
+          "image/jpeg",
+          "image/png",
+          "image/webp"
+        ];
+
+        if (!allowedTypes.includes(file.type)) {
+          alert("Please select a JPG, PNG, or WebP image.");
+          input.value = "";
+          return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+          alert("Please select an image smaller than 5 MB.");
+          input.value = "";
+          return;
+        }
+
+        currentObjectUrl = URL.createObjectURL(file);
+        preview.src = currentObjectUrl;
+
+        message.textContent =
+          file.name + " (" + (file.size / 1024).toFixed(0) + " KB)";
+
+        container.style.display = "block";
+      });
+
+      removeButton.addEventListener("click", function () {
+        input.value = "";
+        clearPreview();
+      });
+
+      // Release the preview URL when the form is reset.
+      document.getElementById("reportForm")?.addEventListener(
+        "reset",
+        clearPreview
+      );
+    })();
+  </script>
+
+</body>
+</html>
